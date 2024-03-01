@@ -1,4 +1,5 @@
 ﻿
+using System;
 using UnityEngine;
 
 
@@ -12,9 +13,9 @@ namespace Dev.Sonaru
         
         private Vector3 offsetPosition;
         private TGridData[,] gridDataArray;
-        
-        
-        public Grid(int row, int column, float cellSize, Vector3 offsetPosition)
+
+
+        public Grid(int row, int column, float cellSize, Vector3 offsetPosition, Func<Grid<TGridData>, int, int, TGridData> createData)
         {
             this.RowNumber = row;
             this.ColumnNumber = column;
@@ -22,6 +23,14 @@ namespace Dev.Sonaru
             this.offsetPosition = offsetPosition;
 
             gridDataArray = new TGridData[ColumnNumber, RowNumber];
+
+            for (var x = 0; x < ColumnNumber; x++)
+            {
+                for (var y = 0; y < RowNumber; y++)
+                {
+                    SetData(x, y, createData(this, x, y));
+                }
+            }
         }
 
 
@@ -33,7 +42,6 @@ namespace Dev.Sonaru
 
         public Vector3 GetWorldPosition(int xIndex, int yIndex)
         {
-            
             return new Vector3(xIndex, 0, yIndex) * CellSize + offsetPosition;
         }
 
@@ -53,6 +61,7 @@ namespace Dev.Sonaru
                 return;
 
             gridDataArray[xIndex, yIndex] = data;
+            EventManager.RaiseEvent<OnGridDataChanged<TGridData>>(new OnGridDataChanged<TGridData>(this, xIndex, yIndex, data));
         }
 
 
@@ -66,7 +75,7 @@ namespace Dev.Sonaru
         public TGridData GetData(int xIndex, int yIndex)
         {
             if (!CheckCellExist(xIndex, yIndex))
-                return default;
+                return default(TGridData);
 
             return gridDataArray[xIndex, yIndex];
         }

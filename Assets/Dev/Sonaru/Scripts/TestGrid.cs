@@ -1,33 +1,33 @@
-
-using UnityEngine;
-using Dev.Sonaru;
 using Unity.Mathematics;
+using UnityEngine;
 
-
-public class TestGrid : MonoBehaviour
+namespace Dev.Sonaru
 {
-    [SerializeField] private int rowNumber;
-    [SerializeField] private int columnNumber;
-    [SerializeField] private float cellSize;
-    [SerializeField] private Vector3 offsetPosition;
+    public class TestGrid : MonoBehaviour
+    {
+        [SerializeField] private int rowNumber;
+        [SerializeField] private int columnNumber;
+        [SerializeField] private float cellSize;
+        [SerializeField] private Vector3 offsetPosition;
 
-    [SerializeField] private GameObject cellPrefab;
+        [SerializeField] private GameObject cellPrefab;
     
-    private Grid<int> gridSystem;
-    private void Awake()
-    {
-        gridSystem = new Grid<int>(rowNumber, columnNumber, cellSize, offsetPosition);
-    }
-
-
-    private void Start()
-    {
-        for (int i = 0; i < columnNumber; i++)
+        private Grid<bool> gridSystem;
+        private void Awake()
         {
-            for (int j = 0; j < rowNumber; j++)
-            {
-                Instantiate(cellPrefab, gridSystem.GetWorldPosition(i, j), quaternion.identity);
-            }
+            EventManager.Register<OnGridDataChanged<bool>>(InstantiateObject);
+        }
+
+
+        private void Start()
+        {
+            gridSystem = new Grid<bool>(rowNumber, columnNumber, cellSize, offsetPosition, (g, x, y) => false);
+        }
+
+
+        private void InstantiateObject(OnGridDataChanged<bool> e)
+        {
+            Instantiate(cellPrefab, e.grid.GetWorldPosition(e.xIndex, e.yIndex), quaternion.identity);
         }
     }
 }
