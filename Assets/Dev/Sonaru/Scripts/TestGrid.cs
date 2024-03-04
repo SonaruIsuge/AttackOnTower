@@ -13,6 +13,10 @@ namespace Dev.Sonaru
         [SerializeField] private float cellSize;
         [SerializeField] private Vector3 offsetPosition;
 
+        [Header("Path Finding")] 
+        [SerializeField] private bool enableDiagonalPath;
+        
+        [Header("Visual")]
         [SerializeField] private PathFindingVisual pathFindingVisual;
 
 
@@ -73,7 +77,7 @@ namespace Dev.Sonaru
                     endTile = tile;
                     pathFindingVisual.SetKeyTile(endTile);
                     
-                    pathList = pathFindingSystem.FindPath(gridSystem, startTile, endTile);
+                    pathList = pathFindingSystem.FindPath(gridSystem, startTile, endTile, enableDiagonalPath);
                     pathFindingVisual.DrawPath(pathList, false);
                     
                     startTile = null;

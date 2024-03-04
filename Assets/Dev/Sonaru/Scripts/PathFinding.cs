@@ -20,7 +20,7 @@ namespace Dev.Sonaru
         }
         
         
-        public List<PathGridTile> FindPath(Grid<PathGridTile> grid, PathGridTile startTile, PathGridTile endTile)
+        public List<PathGridTile> FindPath(Grid<PathGridTile> grid, PathGridTile startTile, PathGridTile endTile, bool enableDiagonal = true)
         {
             // clear both list and add start tile to open list
             openList.Clear();
@@ -54,7 +54,7 @@ namespace Dev.Sonaru
                 openList.Remove(currentTile);
                 closeList.Add(currentTile);
 
-                foreach (var neighborTile in GetNeighborList(grid, currentTile))
+                foreach (var neighborTile in GetNeighborList(grid, currentTile, enableDiagonal))
                 {
                     if(closeList.Contains(neighborTile))
                         continue;
@@ -120,7 +120,7 @@ namespace Dev.Sonaru
         }
         
         
-        private List<PathGridTile> GetNeighborList(Grid<PathGridTile> grid, PathGridTile currentTile)
+        private List<PathGridTile> GetNeighborList(Grid<PathGridTile> grid, PathGridTile currentTile, bool enableDiagonal)
         {
             var neighborList = new List<PathGridTile>();
 
@@ -129,10 +129,10 @@ namespace Dev.Sonaru
                 //Left
                 neighborList.Add(grid.GetData(currentTile.XIndex - 1, currentTile.YIndex));
                 //LeftDown
-                if(currentTile.YIndex - 1 >= 0) 
+                if(enableDiagonal && currentTile.YIndex - 1 >= 0) 
                     neighborList.Add(grid.GetData(currentTile.XIndex - 1, currentTile.YIndex - 1));
                 //LeftUp
-                if(currentTile.YIndex + 1 < grid.RowNumber) 
+                if(enableDiagonal && currentTile.YIndex + 1 < grid.RowNumber) 
                     neighborList.Add(grid.GetData(currentTile.XIndex - 1, currentTile.YIndex + 1));
             }
             if(currentTile.XIndex + 1 < grid.ColumnNumber)
@@ -140,10 +140,10 @@ namespace Dev.Sonaru
                 //Right
                 neighborList.Add(grid.GetData(currentTile.XIndex + 1, currentTile.YIndex));
                 //RightDown
-                if(currentTile.YIndex - 1 >= 0) 
+                if(enableDiagonal && currentTile.YIndex - 1 >= 0) 
                     neighborList.Add(grid.GetData(currentTile.XIndex + 1, currentTile.YIndex - 1));
                 //RightUp
-                if(currentTile.YIndex + 1 < grid.RowNumber) 
+                if(enableDiagonal && currentTile.YIndex + 1 < grid.RowNumber) 
                     neighborList.Add(grid.GetData(currentTile.XIndex + 1, currentTile.YIndex + 1));
             }
             //Down
