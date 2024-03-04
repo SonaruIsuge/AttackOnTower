@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace Dev.Sonaru
 {
-    public class Grid<TGridData>
+    public class Grid<TGridData> where TGridData : IGridTile
     {
         public int RowNumber { get; private set; }
         public int ColumnNumber { get; private set; }

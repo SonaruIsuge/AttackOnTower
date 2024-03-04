@@ -3,7 +3,7 @@
     public abstract class CustomEvent { }
 
 
-    public class OnGridDataChanged<TGridData> : CustomEvent
+    public class OnGridDataChanged<TGridData> : CustomEvent where TGridData : IGridTile
     {
         public Grid<TGridData> grid;
         public int xIndex;
@@ -16,6 +16,19 @@
             this.xIndex = xIndex;
             this.yIndex = yIndex;
             this.data = data;
+        }
+    }
+
+
+    public class OnGridChangeWalkable : CustomEvent
+    {
+        public IGridTile Tile;
+        public bool Walkable;
+
+        public OnGridChangeWalkable(IGridTile tile, bool walkable)
+        {
+            this.Tile = tile;
+            this.Walkable = walkable;
         }
     }
 }
