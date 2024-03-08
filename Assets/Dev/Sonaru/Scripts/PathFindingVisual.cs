@@ -10,6 +10,7 @@ namespace Dev.Sonaru
     public class PathFindingVisual
     {
         [SerializeField] private GameObject cellPrefab;
+        [SerializeField] private Vector3 cellPrefabSize;
         [SerializeField] private Material walkableMat;
         [SerializeField] private Material unWalkableMat;
         [SerializeField] private Material keyMat;
@@ -59,7 +60,8 @@ namespace Dev.Sonaru
 
         public void CreateTileVisual(OnGridDataChanged<PathGridTile> e)
         {
-            var tileRenderer = Object.Instantiate(cellPrefab, e.grid.GetWorldPosition(e.xIndex, e.yIndex), Quaternion.identity).GetComponent<Renderer>();
+            var initPos = e.grid.GetWorldPosition(e.xIndex, e.yIndex) + cellPrefabSize / 2;
+            var tileRenderer = Object.Instantiate(cellPrefab, initPos, Quaternion.identity).GetComponent<Renderer>();
             tileRenderer.material = walkableMat;
             tileRenderers[e.xIndex, e.yIndex] = tileRenderer;
         }

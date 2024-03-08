@@ -104,7 +104,7 @@ namespace Dev.Sonaru
 
         private void ClearPath()
         {
-            if (pathList.Count <= 0) 
+            if (pathList is not { Count: > 0 }) 
                 return;
             
             foreach (var pathTile in pathList)
