@@ -415,7 +415,7 @@ MonoBehaviour:
     height: 10
   maxObjects: 4
   maxDepth: 5
-  spawnCount: 10000
+  spawnCount: 500
   _prefab: {fileID: 522474052016704762, guid: 4979f529ef72ed145a7a24befa3db82f, type: 3}
   IsQuadTree: 1
 --- !u!4 &1544131198

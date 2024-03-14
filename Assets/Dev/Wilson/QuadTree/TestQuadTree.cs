@@ -34,6 +34,8 @@ namespace Dev.Wilson
                 obj.transform.localScale = new Vector3(scale, scale, 1);
                 _controledObj            = obj;
 
+                obj.GetComponent<TestEntity>().SetId((ulong)i);
+
                 var collider = obj.GetComponent<ICollider>();
                 _controledCollider = collider;
                 quadTree.Insert(collider);
@@ -92,17 +94,20 @@ namespace Dev.Wilson
                 OnObjectMove(_controledObj,
                     _controledObj.transform.position + new Vector3(0, 1, 0) * (3 * Time.deltaTime));
             }
-            else if (Input.GetKey(KeyCode.A))
+
+            if (Input.GetKey(KeyCode.A))
             {
                 OnObjectMove(_controledObj,
                     _controledObj.transform.position + new Vector3(-1, 0, 0) * (3 * Time.deltaTime));
             }
-            else if (Input.GetKey(KeyCode.S))
+
+            if (Input.GetKey(KeyCode.S))
             {
                 OnObjectMove(_controledObj,
                     _controledObj.transform.position + new Vector3(0, -1, 0) * (3 * Time.deltaTime));
             }
-            else if (Input.GetKey(KeyCode.D))
+
+            if (Input.GetKey(KeyCode.D))
             {
                 OnObjectMove(_controledObj,
                     _controledObj.transform.position + new Vector3(1, 0, 0) * (3 * Time.deltaTime));

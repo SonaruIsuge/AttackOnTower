@@ -3,8 +3,9 @@ using UnityEngine;
 
 public interface ICollider
 {
-    float X { get; }
-    float Y { get; }
+    ulong Id     { get; }
+    float X      { get; }
+    float Y      { get; }
     float Radius { get; }
 
     void OnCollideEnter();
@@ -13,24 +14,24 @@ public interface ICollider
 
 public class QuadTreeNode
 {
-    public Rect Boundary { get; private set; }
-    public int MaxObjects { get; private set; }
-    public int Level { get; private set; }
-    public List<ICollider> Colliders { get; private set; }
-    public QuadTreeNode[] Children { get; private set; }
+    public Rect                         Boundary      { get; private set; }
+    public int                          MaxObjects    { get; private set; }
+    public int                          Level         { get; private set; }
+    public Dictionary<ulong, ICollider> CollidersById { get; private set; }
+    public QuadTreeNode[]               Children      { get; private set; }
 
     public QuadTreeNode(Rect boundary, int maxObjects, int level)
     {
-        Boundary = boundary;
-        MaxObjects = maxObjects;
-        Level = level;
-        Colliders = new List<ICollider>();
-        Children = new QuadTreeNode[4];
+        Boundary      = boundary;
+        MaxObjects    = maxObjects;
+        Level         = level;
+        CollidersById = new Dictionary<ulong, ICollider>();
+        Children      = new QuadTreeNode[4];
     }
 
     public void Clear()
     {
-        Colliders.Clear();
+        CollidersById.Clear();
 
         for (int i = 0; i < Children.Length; i++)
         {
@@ -45,23 +46,23 @@ public class QuadTreeNode
 
 public class QuadTree
 {
-    public QuadTreeNode Root => root;
-    private QuadTreeNode root;
-    private int maxDepth = 5;
+    public  QuadTreeNode Root => _root;
+    private QuadTreeNode _root;
+    private int          _maxDepth = 5;
 
-    private List<int> _overlappingIndices = new List<int>();
+    private List<ulong> _idToRemove = new List<ulong>();
 
     public QuadTree(Rect boundary, int maxObjects, int maxDepth)
     {
-        maxDepth = maxDepth;
-        root     = new QuadTreeNode(boundary, maxObjects, 0);
+        _maxDepth = maxDepth;
+        _root     = new QuadTreeNode(boundary, maxObjects, 0);
     }
 
     #region - Insert -
 
     public void Insert(ICollider collider)
     {
-        InsertRecursive(root, collider);
+        InsertRecursive(_root, collider);
     }
 
     private void InsertRecursive(QuadTreeNode node, ICollider collider)
@@ -76,85 +77,92 @@ public class QuadTree
                     InsertRecursive(node.Children[i], collider);
                 }
             }
+
             return;
         }
 
         // 已經是子節點了
-        node.Colliders.Add(collider);
+        node.CollidersById.TryAdd(collider.Id, collider);
 
         // 超過最大值，拆分Node
-        if (node.Colliders.Count > node.MaxObjects && node.Level < maxDepth)
+        if (node.CollidersById.Count > node.MaxObjects && node.Level < _maxDepth)
         {
             if (node.Children[0] == null)
             {
                 SplitNode(node);
             }
 
-            int i = 0;
-            while (i < node.Colliders.Count)
+            _idToRemove.Clear();
+            foreach (var id in node.CollidersById.Keys)
             {
+                var value   = node.CollidersById[id];
                 var isDirty = false;
                 for (int j = 0; j < 4; j++)
                 {
-                    if (IsRectOverlapCollider(node.Children[j].Boundary, node.Colliders[i]))
+                    if (IsRectOverlapCollider(node.Children[j].Boundary, value))
                     {
                         isDirty = true;
-                        node.Children[j].Colliders.Add(node.Colliders[i]);
+                        node.Children[j].CollidersById.TryAdd(id, value);
                     }
                 }
+
                 if (isDirty)
-                    node.Colliders.RemoveAt(i);
-                i++;
+                    _idToRemove.Add(id);
+            }
+
+            foreach (var id in _idToRemove)
+            {
+                node.CollidersById.Remove(id);
             }
         }
     }
 
     private bool IsRectOverlapCollider(Rect rect, ICollider collider)
     {
-        // 计算矩形的边界
-        float rectLeft = rect.xMin;
-        float rectRight = rect.xMax;
-        float rectTop = rect.yMax;
-        float rectBottom = rect.yMin;
+        var rectLeft   = rect.xMin;
+        var rectRight  = rect.xMax;
+        var rectTop    = rect.yMax;
+        var rectBottom = rect.yMin;
 
-        // 获取碰撞体的边界
-        float colliderLeft = collider.X - collider.Radius;
-        float colliderRight = collider.X + collider.Radius;
-        float colliderTop = collider.Y + collider.Radius;
-        float colliderBottom = collider.Y - collider.Radius;
+        var colliderLeft   = collider.X - collider.Radius;
+        var colliderRight  = collider.X + collider.Radius;
+        var colliderTop    = collider.Y + collider.Radius;
+        var colliderBottom = collider.Y - collider.Radius;
 
-        // 检查矩形是否与碰撞体的边界重叠
-        bool overlapX = colliderLeft <= rectRight && colliderRight >= rectLeft;
-        bool overlapY = colliderTop >= rectBottom && colliderBottom <= rectTop;
+        var overlapX = colliderLeft <= rectRight && colliderRight >= rectLeft;
+        var overlapY = colliderTop >= rectBottom && colliderBottom <= rectTop;
 
         return overlapX && overlapY;
     }
 
     private void SplitNode(QuadTreeNode node)
     {
-        float subWidth = node.Boundary.width / 2;
-        float subHeight = node.Boundary.height / 2;
-        float x = node.Boundary.xMin;
-        float y = node.Boundary.yMin;
+        var subWidth  = node.Boundary.width / 2;
+        var subHeight = node.Boundary.height / 2;
+        var x         = node.Boundary.xMin;
+        var y         = node.Boundary.yMin;
 
-        node.Children[0] = new QuadTreeNode(new Rect(x + subWidth, y + subHeight, subWidth, subHeight), node.MaxObjects, node.Level + 1);
-        node.Children[1] = new QuadTreeNode(new Rect(x, y + subHeight, subWidth, subHeight), node.MaxObjects, node.Level + 1);
+        node.Children[0] = new QuadTreeNode(new Rect(x + subWidth, y + subHeight, subWidth, subHeight), node.MaxObjects,
+            node.Level + 1);
+        node.Children[1] = new QuadTreeNode(new Rect(x, y + subHeight, subWidth, subHeight), node.MaxObjects,
+            node.Level + 1);
         node.Children[2] = new QuadTreeNode(new Rect(x, y, subWidth, subHeight), node.MaxObjects, node.Level + 1);
-        node.Children[3] = new QuadTreeNode(new Rect(x + subWidth, y, subWidth, subHeight), node.MaxObjects, node.Level + 1);
+        node.Children[3] =
+            new QuadTreeNode(new Rect(x + subWidth, y, subWidth, subHeight), node.MaxObjects, node.Level + 1);
     }
 
     private int GetChildIndex(QuadTreeNode node, ICollider collider)
     {
-        int index = -1;
-        float verticalMidpoint = node.Boundary.xMin + (node.Boundary.width / 2);
-        float horizontalMidpoint = node.Boundary.yMin + (node.Boundary.height / 2);
+        var index              = -1;
+        var verticalMidpoint   = node.Boundary.xMin + (node.Boundary.width / 2);
+        var horizontalMidpoint = node.Boundary.yMin + (node.Boundary.height / 2);
 
-        bool topQuadrant = collider.Y > horizontalMidpoint;
-        bool bottomQuadrant = collider.Y < horizontalMidpoint;
-        bool topAndBottomQuadrant = collider.Y <= horizontalMidpoint && collider.Y >= horizontalMidpoint;
-        bool leftQuadrant = collider.X < verticalMidpoint;
-        bool rightQuadrant = collider.X > verticalMidpoint;
-        bool leftAndRightQuadrant = collider.X >= verticalMidpoint && collider.X <= verticalMidpoint;
+        var topQuadrant          = collider.Y > horizontalMidpoint;
+        var bottomQuadrant       = collider.Y < horizontalMidpoint;
+        var topAndBottomQuadrant = collider.Y <= horizontalMidpoint && collider.Y >= horizontalMidpoint;
+        var leftQuadrant         = collider.X < verticalMidpoint;
+        var rightQuadrant        = collider.X > verticalMidpoint;
+        var leftAndRightQuadrant = collider.X >= verticalMidpoint && collider.X <= verticalMidpoint;
 
         if (topAndBottomQuadrant && leftAndRightQuadrant)
         {
@@ -193,7 +201,7 @@ public class QuadTree
 
     public void Remove(ICollider collider)
     {
-        RemoveRecursive(collider, root);
+        RemoveRecursive(collider, _root);
     }
 
     private void RemoveRecursive(ICollider collider, QuadTreeNode node)
@@ -201,9 +209,9 @@ public class QuadTree
         if (node == null)
             return;
 
-        if (node.Colliders.Contains(collider))
+        if (node.CollidersById.ContainsKey(collider.Id))
         {
-            node.Colliders.Remove(collider);
+            node.CollidersById.Remove(collider.Id);
             return;
         }
 
@@ -225,7 +233,7 @@ public class QuadTree
         if (!node.Boundary.Overlaps(range))
             return;
 
-        foreach (ICollider collider in node.Colliders)
+        foreach (ICollider collider in node.CollidersById.Values)
         {
             var pos = new Vector2(collider.X, collider.Y);
             if (range.Contains(pos))
@@ -248,7 +256,7 @@ public class QuadTree
         if (!IsRectOverlapCollider(node.Boundary, collider))
             return;
 
-        foreach (ICollider col in node.Colliders)
+        foreach (ICollider col in node.CollidersById.Values)
         {
             collidersInRange.Add(col);
         }
@@ -271,7 +279,7 @@ public class QuadTree
 
     public QuadTreeNode GetNodeContainingCollider(ICollider collider)
     {
-        return GetNodeContainingColliderRecursive(collider, root);
+        return GetNodeContainingColliderRecursive(collider, _root);
     }
 
     private QuadTreeNode GetNodeContainingColliderRecursive(ICollider collider, QuadTreeNode node)
@@ -279,7 +287,7 @@ public class QuadTree
         if (node == null)
             return null;
 
-        if (node.Colliders.Contains(collider))
+        if (node.CollidersById.ContainsKey(collider.Id))
         {
             return node;
         }
